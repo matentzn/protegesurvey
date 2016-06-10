@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin name="Protege Survey Tool" version="0.1.0">
+         
+   <extension id="ProtegeSurveyView"
+               point="org.protege.editor.core.application.ViewComponent">
+        <label value="Protege Survey"/>
+        <class value="org.whatif.tools.survey.ProtegeSurveyView"/>
+       	<headerColor value="@org.protege.ontologycolor"/>
+        <category value="@org.protege.ontologycategory"/>
+    </extension>
+    
+      <extension id="ProtegeSurveyTab" point="org.protege.editor.core.application.WorkspaceTab">
+		<label value="Protege Survey Tool"/>
+		<class value="org.protege.editor.core.ui.workspace.WorkspaceViewsTab"/>
+		<index value="Y"/>
+		<editorKitId value="OWLEditorKit"/>
+		<defaultViewConfigFileName value="whatif-tools-tab.layout.xml"/>
+   </extension>
+   
+</plugin>

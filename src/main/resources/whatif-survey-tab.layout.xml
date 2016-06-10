@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="0.053910664492409346 0.10641034382491057 0.11660611972365686">
+        <CNode>
+            <Component label="Object property hierarchy">
+                <Property id="pluginId" value="org.protege.editor.owl.OWLObjectPropertyTree"/>
+            </Component>
+            <Component label="Data property hierarchy">
+                <Property id="pluginId" value="org.protege.editor.owl.OWLDataPropertyTree"/>
+            </Component>
+            <Component label="Enhanced Class Hierarchy">
+                <Property id="pluginId" value="org.whatif.tools.EnhancedClassHierarchyView"/>
+            </Component>
+        </CNode>
+        <HSNode splits="0.04713831841710132 0.03811387456535483">
+            <CNode>
+                <Component label="Class Description">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLClassDescription"/>
+                </Component>
+                <Component label="Class Usage">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLClassUsageView"/>
+                </Component>
+                <Component label="Class Annotations">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLClassAnnotations"/>
+                </Component>
+                <Component label="Object Property Description">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLObjectPropertyDescription"/>
+                </Component>
+                <Component label="Data Property Description">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLDataPropertyDescription"/>
+                </Component>
+            </CNode>
+            <VSNode splits="0.004764234320669354 0.004764234320669354">
+                <CNode>
+                    <Component label="Data Property Characteristics">
+                        <Property id="pluginId" value="org.protege.editor.owl.OWLDataPropertyCharacteristics"/>
+                    </Component>
+                    <Component label="Object Property Characteristics">
+                        <Property id="pluginId" value="org.protege.editor.owl.OWLObjectPropertyCharacteristics"/>
+                    </Component>
+                </CNode>
+                <CNode>
+                    <Component label="Members list">
+                        <Property id="pluginId" value="org.protege.editor.owl.OWLMembersList"/>
+                    </Component>
+                    <Component label="Members list (inferred)">
+                        <Property id="pluginId" value="org.protege.editor.owl.OWLInferredMembersList"/>
+                    </Component>
+                </CNode>
+            </VSNode>
+        </HSNode>
+        <HSNode splits="0.03131872241817699 0.03131872241817699">
+            <CNode>
+                <Component label="Whatif Entailment Inspector">
+                    <Property id="pluginId" value="org.whatif.tools.EntailmentInspectorView"/>
+                </Component>
+            </CNode>
+            <CNode>
+                <Component label="History">
+                    <Property id="pluginId" value="org.whatif.tools.HistoryView"/>
+                </Component>
+            </CNode>
+        </HSNode>
+    </VSNode>
+</layout>
