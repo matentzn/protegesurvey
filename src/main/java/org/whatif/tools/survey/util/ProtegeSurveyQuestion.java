@@ -8,15 +8,16 @@ import java.util.Set;
 public class ProtegeSurveyQuestion {
 
 	final String id;
+	final int timeout;
 	final String phrase;
 	final String optionstype;
-	final Set<String> options;
+	final List<String> options;
 	final Set<String> correctoptions;
 	final String tabid;
 	final boolean questionratedifficulty;
 	final boolean questionexpectation;
 	
-	public ProtegeSurveyQuestion(String id, String phrase, String optionstype, Set<String> options, Set<String> correctoptions, String tabid, boolean questionratedifficulty, boolean questionexpectation) {
+	public ProtegeSurveyQuestion(String id, String phrase, String optionstype, List<String> options, Set<String> correctoptions, String tabid, boolean questionratedifficulty, boolean questionexpectation, int to_i) {
 		this.id = id;
 		this.phrase = phrase;
 		this.optionstype = optionstype;
@@ -25,6 +26,7 @@ public class ProtegeSurveyQuestion {
 		this.tabid = tabid;
 		this.questionratedifficulty = questionratedifficulty;
 		this.questionexpectation = questionexpectation;
+		this.timeout = to_i;
 	}
 	
 	public String getQuestionPhrase() {
@@ -35,7 +37,7 @@ public class ProtegeSurveyQuestion {
 		return optionstype;
 	}
 
-	public Set<String> getOptions() {
+	public List<String> getOptions() {
 		return options;
 	}
 
@@ -49,5 +51,17 @@ public class ProtegeSurveyQuestion {
 
 	public String getTab() {
 		return tabid;
+	}
+	
+	public boolean isRate() {
+		return questionratedifficulty;
+	}
+
+	public boolean isTimed() {
+		return timeout>0;
+	}
+
+	public int getTimeout() {
+		return timeout;
 	}
 }

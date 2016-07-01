@@ -10,12 +10,27 @@
         <category value="@org.protege.ontologycategory"/>
     </extension>
     
+     <extension id="ProtegeTutorialView"
+               point="org.protege.editor.core.application.ViewComponent">
+        <label value="Protege Tutorial"/>
+        <class value="org.whatif.tools.survey.ProtegeTutorialView"/>
+       	<headerColor value="@org.protege.ontologycolor"/>
+        <category value="@org.protege.ontologycategory"/>
+    </extension>
+    
       <extension id="ProtegeSurveyTab" point="org.protege.editor.core.application.WorkspaceTab">
 		<label value="Protege Survey Tool"/>
 		<class value="org.protege.editor.core.ui.workspace.WorkspaceViewsTab"/>
 		<index value="Y"/>
 		<editorKitId value="OWLEditorKit"/>
 		<defaultViewConfigFileName value="whatif-tools-tab.layout.xml"/>
+   </extension>
+   <extension id="ProtegeSurveyAllEntitiesTab" point="org.protege.editor.core.application.WorkspaceTab">
+		<label value="Protege Survey: All Entities"/>
+		<class value="org.protege.editor.core.ui.workspace.WorkspaceViewsTab"/>
+		<index value="Y"/>
+		<editorKitId value="OWLEditorKit"/>
+		<defaultViewConfigFileName value="protege.survey.all.layout.xml"/>
    </extension>
    
 </plugin>

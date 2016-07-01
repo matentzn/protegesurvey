@@ -48,4 +48,17 @@ public class ProtegeSurveyScenario {
 		return id;
 	}
 
+	public int getRemaingTaskCount() {
+		// TODO Auto-generated method stub
+		return tasks.size();
+	}
+
+	public int getTotalQuestionCount() {
+		int i = 0;
+		for(ProtegeSurveyTask s:tasks) {
+			i+=s.getTotalQuestionCount();
+		}
+		return i;
+	}
+
 }

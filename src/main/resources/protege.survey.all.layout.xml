@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+    <VSNode splits="0.5 0.5">
+        <HSNode splits="0.25 0.25">
+            <CNode>
+                <Component label="Class hierarchy">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLAssertedClassHierarchy"/>
+                </Component>
+            </CNode>
+            <CNode>
+                <Component label="Individuals">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLIndividualsList"/>
+                </Component>
+            </CNode>
+        </HSNode>
+        <HSNode splits="0.25 0.25">
+            <CNode>
+                <Component label="Object property hierarchy">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLObjectPropertyTree"/>
+                </Component>
+            </CNode>
+            <CNode>
+                <Component label="Data property hierarchy">
+                    <Property id="pluginId" value="org.protege.editor.owl.OWLDataPropertyTree"/>
+                </Component>
+            </CNode>
+        </HSNode>
+    </VSNode>
+</layout>

@@ -12,12 +12,13 @@ public class ProtegeSurveyTask {
 	final String description;
 	final boolean runreasoner;
 	final boolean manual;
+	final boolean confirm;
 	private final Queue<ProtegeSurveyQuestion> questions = new LinkedList<ProtegeSurveyQuestion>();
 	private ProtegeSurveyQuestion currentQuestion;
 	private Map<String,Map<String,Set<String>>> additions;
 	private Map<String,Map<String,Set<String>>> removals;
 	
-	public ProtegeSurveyTask(String taskid, List<ProtegeSurveyQuestion> questions, String description, Map<String,Map<String,Set<String>>> additions, Map<String,Map<String,Set<String>>> removals, boolean manual, boolean runreasoner) {
+	public ProtegeSurveyTask(String taskid, List<ProtegeSurveyQuestion> questions, String description, Map<String,Map<String,Set<String>>> additions, Map<String,Map<String,Set<String>>> removals, boolean manual, boolean runreasoner, boolean confirm) {
 		this.taskid = taskid;
 		this.description = description;
 		this.questions.addAll(questions);
@@ -25,6 +26,7 @@ public class ProtegeSurveyTask {
 		this.removals = removals;
 		this.runreasoner = runreasoner;
 		this.manual = manual;
+		this.confirm = confirm;
 	}
 
 	public String getDescription() {
@@ -60,6 +62,18 @@ public class ProtegeSurveyTask {
 	}
 	
 	public boolean isRunReasoner() {
-		return manual;
+		return runreasoner;
+	}
+
+	public int getRemainingQuestionsCount() {
+		return questions.size();
+	}
+
+	public int getTotalQuestionCount() {
+		return questions.size();
+	}
+
+	public boolean requiresConfirm() {
+		return confirm;
 	}
 }

@@ -1,13 +1,12 @@
 package org.whatif.tools.survey.util;
 
-import java.awt.Component;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -31,12 +30,10 @@ import javax.xml.transform.stream.StreamResult;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxEditorParser;
-import org.protege.editor.core.FileUtils;
 import org.semanticweb.owlapi.expression.OWLEntityChecker;
 import org.semanticweb.owlapi.expression.ParserException;
 import org.semanticweb.owlapi.expression.ShortFormEntityChecker;
 import org.semanticweb.owlapi.model.AddAxiom;
-import org.semanticweb.owlapi.model.AxiomType;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLDataFactory;
@@ -46,8 +43,6 @@ import org.semanticweb.owlapi.model.OWLOntologyChange;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.RemoveAxiom;
-import org.semanticweb.owlapi.reasoner.InferenceType;
-import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.util.BidirectionalShortFormProvider;
 import org.semanticweb.owlapi.util.BidirectionalShortFormProviderAdapter;
 import org.semanticweb.owlapi.util.ShortFormProvider;
@@ -63,12 +58,13 @@ public class ProtegeSurvey {
 
 	private final File configuration;
 	private File output;
+	private File ontodir;
 	private final Queue<ProtegeSurveyScenario> scenarios = new LinkedList<ProtegeSurveyScenario>();
 	private final SurveyRenderer renderer;
 	private static final String NEW_LINE_SEPARATOR = "\n";
-	private static final Object[] FILE_HEADER = { "participant", "scenario", "task", "question", "question_phrase",
+	private static final Object[] FILE_HEADER = { "participant", "scenario", "task", "question", "question_phrase", "question_type","view",
 			"skipped", "answer", "correct_answer", "total_options", "true_pos", "true_neg", "false_pos", "false_neg",
-			"clickcount", "keystrokecount", "start", "end", "scrollamount" };
+			"clickcount","clickcount_surveytool", "keystrokecount", "start", "end", "scrollamount", "rating" };
 	private static final List<Object> fileheaderlist = Arrays.asList(FILE_HEADER);
 	private ProtegeSurveyScenario currentscenario;
 	private SurveyState state;
@@ -77,6 +73,7 @@ public class ProtegeSurvey {
 	private CSVPrinter csvFilePrinter;
 	private CSVFormat csvFileFormat;
 	boolean started = false;
+	Map<String, String> qrec = null;
 
 	public ProtegeSurvey(File config, SurveyRenderer renderer) {
 		this.configuration = config;
@@ -111,7 +108,7 @@ public class ProtegeSurvey {
 	}
 
 	public boolean start(String participant) {
-		if(started) {
+		if (started) {
 			WhatifUtils.p("Survery already started");
 			return false;
 		}
@@ -133,7 +130,8 @@ public class ProtegeSurvey {
 
 		WhatifUtils.p("Root element :" + doc.getDocumentElement().getNodeName());
 		String out = doc.getDocumentElement().getAttribute("outputdir");
-		this.output = new File(out,"data_survey");
+		this.output = new File(out, "data");
+		this.ontodir = new File(out, "ontologies");
 		this.output.mkdir();
 		NodeList sList = doc.getElementsByTagName("scenario");
 
@@ -144,10 +142,11 @@ public class ProtegeSurvey {
 			if (scenarioNode.getNodeType() == Node.ELEMENT_NODE) {
 
 				Element scenarioElement = (Element) scenarioNode;
-				
-				String ontology_url = scenarioElement.getAttribute("ontologyurl");
-				
-				//String ontology_iri = scenarioElement.getAttribute("ontologyiri");
+
+				String ontology_url = scenarioElement.getAttribute("ontology");
+
+				// String ontology_iri =
+				// scenarioElement.getAttribute("ontologyiri");
 				// OWLDataFactory df = man.getOWLDataFactory();
 
 				String scenario_id = scenarioElement.getAttribute("id");
@@ -168,6 +167,8 @@ public class ProtegeSurvey {
 								String taskid = taskElement.getAttribute("id");
 								boolean runreasoner = taskElement.hasAttribute("runreasoner")
 										? taskElement.getAttribute("runreasoner").equals("true") : false;
+								boolean confirm = taskElement.hasAttribute("confirm")
+										? taskElement.getAttribute("confirm").equals("true") : true;
 								boolean manual = taskElement.hasAttribute("manual")
 										? taskElement.getAttribute("manual").equals("true") : true;
 								NodeList nlq = taskElement.getChildNodes();
@@ -186,10 +187,18 @@ public class ProtegeSurvey {
 											} else if (questionElement.getNodeName().equals("question")) {
 												String questionid = questionElement.getAttribute("id");
 												String tabid = questionElement.getAttribute("tab");
+												tabid = tabid.equals("random") ? "org.protege.editor.owl.OWLClassesTab" : tabid;
+												String to = questionElement.getAttribute("timeout");
+												int to_i = -1;
+												try {
+													to_i = Integer.valueOf(to);
+												} catch (Exception e) {
+													WhatifUtils.e("timeout value for question "+questionid+" is not valid.");
+												}
 												boolean questionratedifficulty = questionElement
 														.getAttribute("ratedifficulty").equals("true");
-												boolean questionexpectation = questionElement.getAttribute("expectation")
-														.equals("true");
+												boolean questionexpectation = questionElement
+														.getAttribute("expectation").equals("true");
 
 												String phrase = extractDescription((Element) questionElement
 														.getElementsByTagName("phrase").item(0));
@@ -198,7 +207,7 @@ public class ProtegeSurvey {
 														.getElementsByTagName("options").item(0);
 												String optionstype = optionsElement.getAttribute("type");
 												NodeList nlo = optionsElement.getChildNodes();
-												Set<String> options = new HashSet<String>();
+												List<String> options = new ArrayList<String>();
 												Set<String> correctoptions = new HashSet<String>();
 
 												if (nlo != null && nlo.getLength() > 0) {
@@ -217,54 +226,64 @@ public class ProtegeSurvey {
 														}
 													}
 												}
-												
+
 												/*
-
-												Element viewsElement = (Element) questionElement
-														.getElementsByTagName("views").item(0);
-												NodeList nlv = viewsElement.getChildNodes();
-												List<ProtegeView> views = new ArrayList<ProtegeView>();
-
-												if (nlv != null && nlv.getLength() > 0) {
-													for (int k = 0; k < nlv.getLength(); k++) {
-														if (nlv.item(k).getNodeType() == Node.ELEMENT_NODE) {
-															Element viewElement = (Element) nlv.item(k);
-															if (viewElement.getNodeName().equals("view")) {
-																String view = viewElement.getAttribute("id");
-																// System.out.println(view);
-																// System.exit(0);
-																ProtegeView v = new ProtegeView(view);
-
-																if (viewElement.hasAttribute("gridx")) {
-																	int gridx = Integer.parseInt(
-																			viewElement.getAttribute("gridx"));
-																	v.setGridx(gridx);
-																}
-																if (viewElement.hasAttribute("gridy")) {
-																	int gridy = Integer.parseInt(
-																			viewElement.getAttribute("gridy"));
-																	v.setGridy(gridy);
-																}
-																if (viewElement.hasAttribute("weightx")) {
-																	double weightx = Double.parseDouble(
-																			viewElement.getAttribute("weightx"));
-																	v.setWeightx(weightx);
-																}
-																if (viewElement.hasAttribute("weighty")) {
-																	double weighty = Double.parseDouble(
-																			viewElement.getAttribute("weighty"));
-																	v.setWeighty(weighty);
-																}
-																views.add(v);
-															}
-														}
-													}
-												}
-												*/
+												 * 
+												 * Element viewsElement =
+												 * (Element) questionElement
+												 * .getElementsByTagName("views"
+												 * ).item(0); NodeList nlv =
+												 * viewsElement.getChildNodes();
+												 * List<ProtegeView> views = new
+												 * ArrayList<ProtegeView>();
+												 * 
+												 * if (nlv != null &&
+												 * nlv.getLength() > 0) { for
+												 * (int k = 0; k <
+												 * nlv.getLength(); k++) { if
+												 * (nlv.item(k).getNodeType() ==
+												 * Node.ELEMENT_NODE) { Element
+												 * viewElement = (Element)
+												 * nlv.item(k); if
+												 * (viewElement.getNodeName().
+												 * equals("view")) { String view
+												 * =
+												 * viewElement.getAttribute("id"
+												 * ); //
+												 * System.out.println(view); //
+												 * System.exit(0); ProtegeView v
+												 * = new ProtegeView(view);
+												 * 
+												 * if (viewElement.hasAttribute(
+												 * "gridx")) { int gridx =
+												 * Integer.parseInt(
+												 * viewElement.getAttribute(
+												 * "gridx")); v.setGridx(gridx);
+												 * } if
+												 * (viewElement.hasAttribute(
+												 * "gridy")) { int gridy =
+												 * Integer.parseInt(
+												 * viewElement.getAttribute(
+												 * "gridy")); v.setGridy(gridy);
+												 * } if
+												 * (viewElement.hasAttribute(
+												 * "weightx")) { double weightx
+												 * = Double.parseDouble(
+												 * viewElement.getAttribute(
+												 * "weightx"));
+												 * v.setWeightx(weightx); } if
+												 * (viewElement.hasAttribute(
+												 * "weighty")) { double weighty
+												 * = Double.parseDouble(
+												 * viewElement.getAttribute(
+												 * "weighty"));
+												 * v.setWeighty(weighty); }
+												 * views.add(v); } } } }
+												 */
 
 												ProtegeSurveyQuestion q = new ProtegeSurveyQuestion(questionid, phrase,
 														optionstype, options, correctoptions, tabid,
-														questionratedifficulty, questionexpectation);
+														questionratedifficulty, questionexpectation, to_i);
 												questions.add(q);
 											} else if (questionElement.getNodeName().equals("changes")) {
 												NodeList nlv = questionElement.getChildNodes();
@@ -325,18 +344,19 @@ public class ProtegeSurvey {
 								}
 
 								ProtegeSurveyTask task = new ProtegeSurveyTask(taskid, questions, taskdescription,
-										additions, removals, manual, runreasoner);
+										additions, removals, manual, runreasoner, confirm);
 								tasks.add(task);
 							}
 						}
 					}
 				}
-				ProtegeSurveyScenario scenario = new ProtegeSurveyScenario(tasks, scenariodescription, ontology_url,
+				String uri = ontology_url.isEmpty() ? "": new File(ontodir,ontology_url).toURI().toString();
+				ProtegeSurveyScenario scenario = new ProtegeSurveyScenario(tasks, scenariodescription, uri,
 						scenario_id);
 				scenarios.add(scenario);
 			}
 		}
-		WhatifUtils.p("SCENARIOCT: "+scenarios.size());
+		WhatifUtils.p("SCENARIOCT: " + scenarios.size());
 	}
 
 	private String extractDescription(Element e)
@@ -349,13 +369,13 @@ public class ProtegeSurvey {
 
 		String d = buffer.toString().replaceAll("<description>", "").replaceAll("</description>", "")
 				.replaceAll("<phrase>", "").replaceAll("</phrase>", "");
-		return d;
+		return d.trim();
 	}
 
 	private void addDeclaration(String name, String type, OWLOntology o) {
 		OWLOntologyManager man = o.getOWLOntologyManager();
 		OWLDataFactory df = man.getOWLDataFactory();
-		String o_iri = o.getOntologyID().getOntologyIRI().toString();
+		String o_iri = o.getOntologyID().getOntologyIRI().or(IRI.create("http://failed.org")).toString();
 		WhatifUtils.p("Adding declaration");
 		WhatifUtils.p(name);
 		WhatifUtils.p(IRI.create(o_iri + "#" + name));
@@ -412,7 +432,7 @@ public class ProtegeSurvey {
 			try {
 				OWLAxiom ax = parseAxiom(axiom, o);
 				if (!o.containsAxiom(ax)) {
-					System.out.println("Not contains: "+ax.toString());
+					System.out.println("Not contains: " + ax.toString());
 					return false;
 				}
 			} catch (ParserException e) {
@@ -425,7 +445,7 @@ public class ProtegeSurvey {
 			try {
 				OWLAxiom ax = parseAxiom(axiom, o);
 				if (o.containsAxiom(ax)) {
-					System.out.println("Contains: "+ax.toString());
+					System.out.println("Contains: " + ax.toString());
 					return false;
 				}
 			} catch (ParserException e) {
@@ -434,16 +454,16 @@ public class ProtegeSurvey {
 			}
 		}
 		if (currentscenario.getCurrentTask().isRunReasoner()) {
-			if (!reasonerinit) {
-				return false;
+			if(!reasonerinit) {
+			return false;
 			}
 		}
 		state = SurveyState.TASKVALIDATE;
 		return true;
 	}
 
-	public void applyTaskChanges(OWLOntology o, boolean skip) {
-		if(!skip && currentscenario.getCurrentTask().isManual()) {
+	public void applyTaskChanges(OWLOntology o) {
+		if (currentscenario.getCurrentTask().isManual()) {
 			return;
 		}
 		Map<String, Map<String, Set<String>>> add = currentscenario.getCurrentTask().getAdditions();
@@ -488,11 +508,18 @@ public class ProtegeSurvey {
 
 	public void validateQuestion(Object answer, QuestionMetadata qm) {
 		state = SurveyState.QUESTIONVALIDATE;
-		Map<String, String> rec = prepareRecord(answer);
-		rec.putAll(qm.getRecord());
+		qrec = prepareRecord(answer);
+		qrec.putAll(qm.getRecord());
+		if (qm.skipped) {
+			validateRating("");
+		}
+	}
+
+	private void saveRecord(Map<String, String> rec) {
 		List<String> rec_str = getStringOfRec(rec);
 		try {
 			csvFilePrinter.printRecord(rec_str);
+			csvFilePrinter.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -520,21 +547,22 @@ public class ProtegeSurvey {
 		rec.put("scenario", getCurrentScenarioId());
 		rec.put("task", getCurrentTaskId());
 		rec.put("question", getCurrentQuestionId());
+		rec.put("timeout", getCurrentQuestionTimeout()+"");
 		rec.put("question_phrase", currentscenario.getCurrentTask().getCurrentQuestion().getQuestionPhrase());
-		rec.put("widget", currentscenario.getCurrentTask().getCurrentQuestion().getTab());
+		rec.put("view", currentscenario.getCurrentTask().getCurrentQuestion().getTab());
+		rec.put("question_type", currentscenario.getCurrentTask().getCurrentQuestion().getOptionsType());
 		Set<String> results = renderer.parseResults(answer);
 		Set<String> correct = currentscenario.getCurrentTask().getCurrentQuestion().getCorrectOptions();
-		analyseQuestionAnswer(rec, results, correct);
+		List<String> all = currentscenario.getCurrentTask().getCurrentQuestion().getOptions();
+		analyseQuestionAnswer(rec, results, correct, new HashSet<String>(all));
 		return rec;
 	}
 
-	private String tubeSeperatedView(Collection<ProtegeView> views) {
-		Set<String> widgets = new HashSet<String>();
-		for (ProtegeView view : views) {
-			widgets.add(view.getId());
-		}
-		return tubeSeperated(widgets);
-	}
+	/*
+	 * private String tubeSeperatedView(Collection<ProtegeView> views) {
+	 * Set<String> widgets = new HashSet<String>(); for (ProtegeView view :
+	 * views) { widgets.add(view.getId()); } return tubeSeperated(widgets); }
+	 */
 
 	private String tubeSeperated(Set<String> widgets) {
 		StringBuilder sb = new StringBuilder();
@@ -544,9 +572,8 @@ public class ProtegeSurvey {
 		return sb.toString().replaceAll("[|]$", "");
 	}
 
-	private void analyseQuestionAnswer(Map<String, String> rec, Set<String> results, Set<String> correct) {
-		Set<String> all = new HashSet<String>(correct);
-		all.addAll(results);
+	private void analyseQuestionAnswer(Map<String, String> rec, Set<String> results, Set<String> correct, Set<String> all) {
+		//WhatifUtils.p("analyseQuestionAnswer: "+results.size()+" "+correct.size()+" "+all.size());
 		int truepos = 0;
 		int trueneg = 0;
 		int falsepos = 0;
@@ -602,9 +629,9 @@ public class ProtegeSurvey {
 	}
 
 	public void validateRating(Object answer) {
-		// PErhaps send state of all of protege to check whether reasoner has
-		// run and so on
+		qrec.put("rating", answer + "");
 		state = SurveyState.RATEQUESTION;
+		nextState();
 	}
 
 	public String getTaskDescription() {
@@ -641,6 +668,7 @@ public class ProtegeSurvey {
 			state = SurveyState.RATEQUESTION;
 			break;
 		case RATEQUESTION:
+			saveRecord(qrec);
 			if (currentscenario.hasNextQuestion()) {
 				state = SurveyState.QUESTION;
 				currentscenario.getCurrentTask().nextQuestion();
@@ -678,7 +706,7 @@ public class ProtegeSurvey {
 	public Object getQuestionOptions() {
 		return renderer.renderQuestion(currentscenario.getCurrentTask().getCurrentQuestion());
 	}
-	
+
 	public boolean currentScenarioInvolvesOntology() {
 		return !currentscenario.getURI().isEmpty();
 	}
@@ -689,6 +717,42 @@ public class ProtegeSurvey {
 
 	public String getTabId() {
 		return currentscenario.getCurrentTask().getCurrentQuestion().getTab();
+	}
+
+	public boolean rateQuestion() {
+		return currentscenario.getCurrentTask().getCurrentQuestion().isRate();
+	}
+
+	public int getRemaingTaskCount() {
+		return currentscenario.getRemaingTaskCount();
+	}
+
+	public int getRemainingQuestionCount() {
+		return currentscenario.getCurrentTask().getRemainingQuestionsCount();
+	}
+
+	public int getRemainingScenarioCount() {
+		return scenarios.size();
+	}
+
+	public int getTotalQuestionCount() {
+		int i = 0;
+		for (ProtegeSurveyScenario s : scenarios) {
+			i += s.getTotalQuestionCount();
+		}
+		return i;
+	}
+
+	public boolean taskNeedsConfirmation() {
+		return currentscenario.getCurrentTask().requiresConfirm();
+	}
+
+	public boolean currentQuestionIsTimed() {
+		return currentscenario.getCurrentTask().getCurrentQuestion().isTimed();
+	}
+
+	public int getCurrentQuestionTimeout() {
+		return currentscenario.getCurrentTask().getCurrentQuestion().getTimeout();
 	}
 
 }

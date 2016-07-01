@@ -6,6 +6,7 @@ import java.util.Map;
 public class QuestionMetadata {
 	
 	int clickcount = -1;
+	int clickcount_comp = -1;
 	int keystrokecount = -1;
 	long start = -1;
 	long end = -1;
@@ -34,11 +35,15 @@ public class QuestionMetadata {
 		rec.put("end", end+"");
 		rec.put("keystrokecount", keystrokecount+"");
 		rec.put("clickcount", clickcount+"");
+		rec.put("clickcount_surveytool", clickcount_comp+"");
 		rec.put("skipped", skipped+"");
 		rec.put("scrollamount", scrollamount+"");
 		return rec;
 	}
 	public void setSkipped(boolean skip) {
 		this.skipped=skip;
+	}
+	public void setClickcountComponent(int clickCount) {
+		this.clickcount_comp = clickCount;
 	}
 }
